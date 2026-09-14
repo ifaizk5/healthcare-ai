@@ -1,0 +1,262 @@
+:root {
+  --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Premium Editorial Medical Palette (Paper + Ink Red, ZERO GRADIENTS) */
+  --color-red-primary: #B4232D;
+  --color-red-deep: #861C24;
+  --color-red-burgundy: #64141A;
+  --color-red-soft: #D96A70;
+  --color-red-pale: #F4DDDE;
+
+  --color-bg-page: #FAF9F6;
+  --color-bg-paper: #F5F2ED;
+  --color-surface-white: #FFFFFF;
+
+  --color-ink-primary: #191716;
+  --color-ink-muted: #625E5A;
+  --color-border: #D8D2CC;
+
+  /* Architectural Sharp Geometry */
+  --radius-sharp: 0px;
+  --radius-card: 3px;
+  --radius-btn: 2px;
+  --radius-input: 2px;
+  --radius-badge: 2px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-page);
+  color: var(--color-ink-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Serif Typography Classes */
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+h1, h2, h3, .heading-serif {
+  font-family: var(--font-serif);
+  color: var(--color-ink-primary);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+.num-serif {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Section Numbering Annotation */
+.section-num {
+  font-family: var(--font-sans);
+  font-size: 0.725rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-red-primary);
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+/* Architectural Dividers */
+.thin-divider {
+  height: 1px;
+  background-color: var(--color-border);
+  border: none;
+  margin: 1.5rem 0;
+}
+
+.thin-divider-red {
+  height: 2px;
+  background-color: var(--color-red-primary);
+  border: none;
+  margin: 1.5rem 0;
+}
+
+/* Card Surface - Clinical Paper Sheet */
+.card {
+  background-color: var(--color-surface-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 1.65rem;
+  box-shadow: 0 2px 8px rgba(25, 23, 22, 0.03);
+  transition: border-color 0.15s ease;
+}
+
+.card:hover {
+  border-color: var(--color-red-primary);
+}
+
+.card-paper {
+  background-color: var(--color-bg-paper);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 1.65rem;
+}
+
+/* Badges - Editorial Micro Tags */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-badge);
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-red {
+  background-color: var(--color-red-pale);
+  color: var(--color-red-deep);
+  border: 1px solid var(--color-red-soft);
+}
+
+.badge-red-solid {
+  background-color: var(--color-red-primary);
+  color: #FFFFFF;
+}
+
+.badge-paper {
+  background-color: var(--color-bg-paper);
+  color: var(--color-ink-primary);
+  border: 1px solid var(--color-border);
+}
+
+.badge-burgundy {
+  background-color: var(--color-red-burgundy);
+  color: #FFFFFF;
+}
+
+/* Form Controls */
+input, select, textarea {
+  width: 100%;
+  background-color: var(--color-surface-white);
+  border: 1px solid var(--color-border);
+  color: var(--color-ink-primary);
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-input);
+  font-size: 0.875rem;
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--color-red-primary);
+  box-shadow: 0 0 0 2px rgba(180, 35, 45, 0.15);
+}
+
+input[type="range"] {
+  accent-color: var(--color-red-primary);
+}
+
+/* Button System - Architectural Rectangles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-btn);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.825rem;
+  cursor: pointer;
+  border: none;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-primary {
+  background-color: var(--color-red-primary);
+  color: #FFFFFF;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-red-deep);
+}
+
+.btn-primary:active {
+  background-color: var(--color-red-burgundy);
+}
+
+.btn-secondary {
+  background-color: var(--color-surface-white);
+  color: var(--color-red-primary);
+  border: 1px solid var(--color-red-primary);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-red-pale);
+}
+
+.btn-tertiary {
+  background-color: transparent;
+  color: var(--color-red-primary);
+  border: 1px solid transparent;
+}
+
+.btn-tertiary:hover {
+  background-color: var(--color-red-pale);
+}
+
+/* Clinical Journal Data Table */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  background-color: var(--color-surface-white);
+  border: 1px solid var(--color-border);
+}
+
+.data-table th {
+  background-color: var(--color-bg-paper);
+  color: var(--color-ink-muted);
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+  border-bottom: 1px solid var(--color-border);
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  font-family: var(--font-sans);
+}
+
+.data-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-ink-primary);
+}
+
+.data-table tbody tr:hover {
+  background-color: #FAF2F2;
+}
+
+/* Institutional Disclaimer Banner */
+.disclaimer-banner {
+  background-color: var(--color-red-burgundy);
+  color: #FFFFFF;
+  padding: 0.45rem 1rem;
+  font-size: 0.75rem;
+  text-align: center;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}

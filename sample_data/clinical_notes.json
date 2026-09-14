@@ -1,0 +1,45 @@
+[
+  {
+    "id": "NOTE-001",
+    "patient_id": "P-10492",
+    "note_type": "Discharge Summary",
+    "text": "Patient is a 63-year-old male presenting with chest pain, dyspnea, and elevated serum cholesterol of 233 mg/dL. Resting blood pressure recorded at 145/90 mmHg. Past history of hypertension treated with Lisinopril 10mg daily. ECG revealed normal sinus rhythm without acute ischemic changes. Exercise stress testing indicated mild ST depression. Patient advised to maintain low-sodium diet and follow up with cardiology in 2 weeks.",
+    "entities": [
+      {"text": "chest pain", "category": "Symptom"},
+      {"text": "dyspnea", "category": "Symptom"},
+      {"text": "elevated serum cholesterol", "category": "Lab Result"},
+      {"text": "hypertension", "category": "Condition"},
+      {"text": "Lisinopril", "category": "Medication"},
+      {"text": "ST depression", "category": "ECG Finding"}
+    ]
+  },
+  {
+    "id": "NOTE-002",
+    "patient_id": "P-10511",
+    "note_type": "Progress Note",
+    "text": "Patient is a 57-year-old female with long-standing type 2 diabetes mellitus and essential hypertension. Admitted following complaints of severe fatigue, dizziness, and shortness of breath. Current medications include Metformin 1000mg twice daily and Amlodipine 5mg. Fasting blood glucose level was 185 mg/dL. Recommended HbA1c testing and continuous cardiac monitoring.",
+    "entities": [
+      {"text": "type 2 diabetes mellitus", "category": "Condition"},
+      {"text": "essential hypertension", "category": "Condition"},
+      {"text": "fatigue", "category": "Symptom"},
+      {"text": "dizziness", "category": "Symptom"},
+      {"text": "shortness of breath", "category": "Symptom"},
+      {"text": "Metformin", "category": "Medication"},
+      {"text": "Amlodipine", "category": "Medication"}
+    ]
+  },
+  {
+    "id": "NOTE-003",
+    "patient_id": "P-10603",
+    "note_type": "Consultation Note",
+    "text": "Cardiology consult requested for 68-year-old male with recurrent angina pectoris upon moderate exertion. Patient has history of coronary artery disease and previous stent placement in 2021. Takes Aspirin 81mg, Atorvastatin 40mg, and Metoprolol 50mg. Echocardiogram shows preserved ejection fraction of 55%. Coronary angiography scheduled.",
+    "entities": [
+      {"text": "angina pectoris", "category": "Condition"},
+      {"text": "coronary artery disease", "category": "Condition"},
+      {"text": "stent placement", "category": "Procedure"},
+      {"text": "Aspirin", "category": "Medication"},
+      {"text": "Atorvastatin", "category": "Medication"},
+      {"text": "Metoprolol", "category": "Medication"}
+    ]
+  }
+]

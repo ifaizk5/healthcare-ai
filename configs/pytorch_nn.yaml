@@ -1,0 +1,17 @@
+model:
+  type: "pytorch_nn"
+  name: "PyTorch Feed-Forward Neural Network"
+  hidden_layers: [64, 32]
+  dropout_rate: 0.2
+  activation: "relu"
+  optimizer: "adam"
+  learning_rate: 0.001
+  batch_size: 16
+  epochs: 50
+  random_state: 42
+
+training:
+  test_size: 0.15
+  val_size: 0.15
+  stratified: true
+  random_state: 42
