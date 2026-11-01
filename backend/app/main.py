@@ -1,5 +1,6 @@
 import os
 import shutil
+import threading
 import pickle
 import pandas as pd
 from fastapi import FastAPI, Request
@@ -14,6 +15,11 @@ from app.services.data_pipeline import HealthcareDataPipeline
 from app.services.feature_engineering import HealthcareFeatureEngineer
 from app.services.ml_engine import ModelTrainerEngine
 from app.services.evaluation_service import ModelEvaluationService
+from app.services.nlp_service import ClinicalCorpus
+
+SEED_DATASET_NAME = "Diabetes 130-US Hospitals Readmission"
+SEED_DATASET_FILE = "diabetes_readmission.csv"
+SEED_TARGET = "readmitted_30d"
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -99,23 +105,29 @@ def seed_initial_data():
         db.commit()
         db.refresh(admin)
 
-        # Seed sample Heart Disease dataset if file exists
-        sample_csv = "sample_data/heart_disease.csv"
-        if os.path.exists(sample_csv) and db.query(Dataset).count() == 0:
-            dest_path = os.path.join(settings.UPLOAD_DIR, "heart_disease_v1.csv")
+        # Seed the Diabetes 130-US Hospitals readmission dataset (run scripts/prepare_datasets.py first)
+        sample_csv = os.path.join(settings.SAMPLE_DATA_DIR, SEED_DATASET_FILE)
+        seed_exists = db.query(Dataset).filter(Dataset.name == SEED_DATASET_NAME).first()
+        if not os.path.exists(sample_csv):
+            print(f"Seed dataset not found at {sample_csv}. Run: py scripts/prepare_datasets.py")
+        elif not seed_exists:
+            dest_path = os.path.join(settings.UPLOAD_DIR, "diabetes_readmission_v1.csv")
             shutil.copyfile(sample_csv, dest_path)
-            
+
             df = HealthcareDataPipeline.load_dataset(dest_path)
-            val_result = HealthcareDataPipeline.validate_dataset(df, target_column="target")
-            
+            val_result = HealthcareDataPipeline.validate_dataset(df, target_column=SEED_TARGET)
+
             dataset = Dataset(
-                name="Heart Disease Risk Dataset",
-                description="De-identified patient risk prediction dataset with 13 clinical features.",
+                name=SEED_DATASET_NAME,
+                description=(
+                    "Diabetes 130-US Hospitals (1999-2008), UCI ML Repository #296, CC BY 4.0. "
+                    "One encounter per patient; target = readmitted within 30 days."
+                ),
                 file_format="CSV",
                 row_count=val_result["row_count"],
                 column_count=val_result["column_count"],
                 owner_id=admin.id,
-                target_column="target",
+                target_column=SEED_TARGET,
                 processing_status="VALIDATED"
             )
             db.add(dataset)
@@ -137,14 +149,14 @@ def seed_initial_data():
             # Train baseline Random Forest & Logistic Regression models
             df_fe = HealthcareFeatureEngineer.engineer_features(df)
             splits, scaler, feature_names = HealthcareDataPipeline.split_and_transform_without_leakage(
-                df_fe, target_column="target", test_size=0.15, val_size=0.15, random_state=42
+                df_fe, target_column=SEED_TARGET, test_size=0.15, val_size=0.15, random_state=42
             )
 
             models_to_seed = [
-                ("Random Forest Risk Classifier", "random_forest", "configs/random_forest.yaml"),
-                ("Logistic Regression Baseline", "logistic_regression", "configs/logistic_regression.yaml"),
-                ("XGBoost Risk Classifier", "xgboost", "configs/xgboost.yaml"),
-                ("PyTorch Feed-Forward NN", "pytorch_nn", "configs/pytorch_nn.yaml")
+                ("Random Forest Readmission Classifier", "random_forest", os.path.join(settings.CONFIGS_DIR, "random_forest.yaml")),
+                ("Logistic Regression Baseline", "logistic_regression", os.path.join(settings.CONFIGS_DIR, "logistic_regression.yaml")),
+                ("XGBoost Readmission Classifier", "xgboost", os.path.join(settings.CONFIGS_DIR, "xgboost.yaml")),
+                ("PyTorch Feed-Forward NN", "pytorch_nn", os.path.join(settings.CONFIGS_DIR, "pytorch_nn.yaml"))
             ]
 
             for m_name, m_type, cfg_path in models_to_seed:
@@ -164,7 +176,7 @@ def seed_initial_data():
                         "scaler": scaler,
                         "feature_names": feature_names,
                         "model_type": m_type,
-                        "target_column": "target",
+                        "target_column": SEED_TARGET,
                         "metrics": eval_res["metrics"]
                     }, f)
 
@@ -187,3 +199,6 @@ def seed_initial_data():
         print(f"Startup Seed Error: {str(e)}")
     finally:
         db.close()
+
+    # Train the MTSamples specialty classifier + search index in the background (~20s) so the first NLP call is fast
+    threading.Thread(target=ClinicalCorpus.ensure_loaded, daemon=True).start()

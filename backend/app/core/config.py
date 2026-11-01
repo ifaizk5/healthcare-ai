@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     
     # Storage & Uploads
     UPLOAD_DIR: str = os.path.join(os.getcwd(), "uploads")
+    # Project-level folders (resolved from this file so the app works from any cwd)
+    PROJECT_ROOT: str = os.getenv("PROJECT_ROOT", os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
+    SAMPLE_DATA_DIR: str = os.getenv("SAMPLE_DATA_DIR", os.path.join(PROJECT_ROOT, "sample_data"))
+    CONFIGS_DIR: str = os.getenv("CONFIGS_DIR", os.path.join(PROJECT_ROOT, "configs"))
     ARTIFACTS_DIR: str = os.path.join(os.getcwd(), "model_artifacts")
     
     # MLflow

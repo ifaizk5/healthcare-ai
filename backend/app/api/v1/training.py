@@ -116,7 +116,7 @@ def start_training_job(
         raise HTTPException(status_code=400, detail="Dataset has no versions.")
 
     # Load config file
-    config_file = req.config_path or f"configs/{req.model_type}.yaml"
+    config_file = req.config_path or os.path.join(settings.CONFIGS_DIR, f"{req.model_type}.yaml")
     if not os.path.exists(config_file):
         config_data = {"model": {"type": req.model_type, "random_state": 42}}
     else:

@@ -17,7 +17,7 @@ router = APIRouter(prefix="/predictions", tags=["Inference & Explainability"])
 
 class PatientRiskRequest(BaseModel):
     model_version_id: int
-    features: Dict[str, float]  # e.g., {"age": 63, "sex": 1, "cp": 3, "trestbps": 145, "chol": 233, "fbs": 1, "restecg": 0, "thalach": 150, "exang": 0, "oldpeak": 2.3, "slope": 0, "ca": 0, "thal": 1}
+    features: Dict[str, float]  # e.g., {"age": 75, "time_in_hospital": 6, "number_inpatient": 2, "a1c_result": 3, ...} (see sample_data/diabetes_readmission.csv)
     threshold: Optional[float] = 0.50
 
 class PredictionResponse(BaseModel):

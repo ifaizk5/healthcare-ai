@@ -3,27 +3,72 @@ import { ApiService } from '../services/api';
 import { ModelVersion, PredictionResult } from '../types';
 import { ArrowUpRight, ArrowDownRight, Zap } from 'lucide-react';
 
+const YES_NO = [{ value: 1, label: 'Yes' }, { value: 0, label: 'No' }];
+
+const DIAGNOSIS_GROUPS = [
+  { key: 'circulatory', label: 'Circulatory' },
+  { key: 'respiratory', label: 'Respiratory' },
+  { key: 'digestive', label: 'Digestive' },
+  { key: 'diabetes', label: 'Diabetes' },
+  { key: 'injury', label: 'Injury' },
+  { key: 'musculoskeletal', label: 'Musculoskeletal' },
+  { key: 'genitourinary', label: 'Genitourinary' },
+  { key: 'neoplasms', label: 'Neoplasms' },
+];
+
+const FEATURE_FIELDS: { key: string; label: string; options?: { value: number; label: string }[] }[] = [
+  { key: 'age', label: 'Age (years)' },
+  { key: 'is_male', label: 'Sex', options: [{ value: 1, label: 'Male' }, { value: 0, label: 'Female' }] },
+  { key: 'time_in_hospital', label: 'Length of Stay (days)' },
+  { key: 'number_inpatient', label: 'Inpatient Visits (prior yr)' },
+  { key: 'number_emergency', label: 'ER Visits (prior yr)' },
+  { key: 'number_outpatient', label: 'Outpatient Visits (prior yr)' },
+  { key: 'number_diagnoses', label: 'Number of Diagnoses' },
+  { key: 'num_medications', label: 'Number of Medications' },
+  { key: 'num_lab_procedures', label: 'Lab Procedures' },
+  { key: 'num_procedures', label: 'Procedures' },
+  { key: 'a1c_result', label: 'HbA1c Result', options: [
+    { value: 0, label: 'Not measured' }, { value: 1, label: 'Normal' }, { value: 2, label: '>7%' }, { value: 3, label: '>8%' },
+  ] },
+  { key: 'max_glu_serum', label: 'Max Glucose Serum', options: [
+    { value: 0, label: 'Not measured' }, { value: 1, label: 'Normal' }, { value: 2, label: '>200' }, { value: 3, label: '>300' },
+  ] },
+  { key: 'num_diabetes_meds', label: 'Diabetes Meds (count)' },
+  { key: 'on_insulin', label: 'On Insulin', options: YES_NO },
+  { key: 'med_changed', label: 'Diabetes Med Changed', options: YES_NO },
+  { key: 'emergency_admission', label: 'Emergency Admission', options: YES_NO },
+  { key: 'discharged_home', label: 'Discharged Home', options: YES_NO },
+];
+
+// Every model feature must be sent; fields without an input keep these defaults.
+const BASE_PATIENT: Record<string, number> = {
+  age: 65, is_male: 0, time_in_hospital: 4, num_lab_procedures: 43, num_procedures: 1, num_medications: 15,
+  number_outpatient: 0, number_emergency: 0, number_inpatient: 0, number_diagnoses: 7,
+  a1c_result: 0, max_glu_serum: 0, num_diabetes_meds: 1, num_med_dose_changes: 0, on_insulin: 1, on_metformin: 0,
+  med_changed: 0, diabetes_med_prescribed: 1, emergency_admission: 1, admitted_from_er: 1, discharged_home: 1,
+  primary_diag_circulatory: 1, primary_diag_respiratory: 0, primary_diag_digestive: 0, primary_diag_diabetes: 0,
+  primary_diag_injury: 0, primary_diag_musculoskeletal: 0, primary_diag_genitourinary: 0, primary_diag_neoplasms: 0,
+};
+
+const HIGH_RISK_PATIENT: Record<string, number> = {
+  age: 75, is_male: 1, time_in_hospital: 9, num_lab_procedures: 65, num_medications: 26,
+  number_outpatient: 2, number_emergency: 2, number_inpatient: 4, number_diagnoses: 9,
+  num_diabetes_meds: 2, num_med_dose_changes: 1, on_insulin: 1, med_changed: 1, discharged_home: 0,
+};
+
+const LOW_RISK_PATIENT: Record<string, number> = {
+  age: 45, time_in_hospital: 2, num_lab_procedures: 30, num_procedures: 0, num_medications: 8,
+  number_diagnoses: 4, a1c_result: 1, on_insulin: 0, on_metformin: 1, emergency_admission: 0, admitted_from_er: 0,
+  primary_diag_circulatory: 0, primary_diag_digestive: 1,
+};
+
 export const PredictPage: React.FC = () => {
   const [models, setModels] = useState<ModelVersion[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<number | null>(null);
   const [threshold, setThreshold] = useState<number>(0.50);
   
-  // Patient Clinical Features Form State
-  const [features, setFeatures] = useState<Record<string, number>>({
-    age: 63,
-    sex: 1,
-    cp: 3,
-    trestbps: 145,
-    chol: 233,
-    fbs: 1,
-    restecg: 0,
-    thalach: 150,
-    exang: 0,
-    oldpeak: 2.3,
-    slope: 0,
-    ca: 0,
-    thal: 1,
-  });
+  // Patient encounter features (Diabetes 130-US Hospitals readmission schema)
+  const [features, setFeatures] = useState<Record<string, number>>({ ...BASE_PATIENT });
 
   const [result, setResult] = useState<PredictionResult | null>(null);
   const [predicting, setPredicting] = useState(false);
@@ -63,17 +108,20 @@ export const PredictPage: React.FC = () => {
     setFeatures((prev) => ({ ...prev, [key]: val }));
   };
 
+  const primaryDiagnosis =
+    DIAGNOSIS_GROUPS.find((g) => features[`primary_diag_${g.key}`] === 1)?.key ?? 'other';
+
+  const setPrimaryDiagnosis = (group: string) => {
+    setFeatures((prev) => {
+      const next = { ...prev };
+      DIAGNOSIS_GROUPS.forEach((g) => { next[`primary_diag_${g.key}`] = g.key === group ? 1 : 0; });
+      return next;
+    });
+  };
+
   // Sample Preset Patient Profiles for fast testing
   const loadPresetProfile = (type: 'high_risk' | 'low_risk') => {
-    if (type === 'high_risk') {
-      setFeatures({
-        age: 68, sex: 1, cp: 0, trestbps: 160, chol: 280, fbs: 1, restecg: 1, thalach: 110, exang: 1, oldpeak: 3.4, slope: 1, ca: 2, thal: 3
-      });
-    } else {
-      setFeatures({
-        age: 41, sex: 0, cp: 2, trestbps: 115, chol: 190, fbs: 0, restecg: 0, thalach: 175, exang: 0, oldpeak: 0.0, slope: 2, ca: 0, thal: 2
-      });
-    }
+    setFeatures({ ...BASE_PATIENT, ...(type === 'high_risk' ? HIGH_RISK_PATIENT : LOW_RISK_PATIENT) });
   };
 
   return (
@@ -171,68 +219,25 @@ export const PredictPage: React.FC = () => {
 
               {/* Feature Grid */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.675rem', color: '#191716', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>Age (years)</label>
-                  <input type="number" value={features.age} onChange={(e) => handleFeatureChange('age', parseFloat(e.target.value))} style={{ borderRadius: '0px', borderColor: '#D8D2CC' }} />
-                </div>
+                {FEATURE_FIELDS.map((field) => (
+                  <div key={field.key}>
+                    <label style={{ fontSize: '0.675rem', color: '#191716', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>{field.label}</label>
+                    {field.options ? (
+                      <select value={features[field.key]} onChange={(e) => handleFeatureChange(field.key, parseInt(e.target.value))} style={{ borderRadius: '0px', borderColor: '#D8D2CC' }}>
+                        {field.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                    ) : (
+                      <input type="number" min={0} value={features[field.key]} onChange={(e) => handleFeatureChange(field.key, parseFloat(e.target.value))} style={{ borderRadius: '0px', borderColor: '#D8D2CC' }} />
+                    )}
+                  </div>
+                ))}
 
                 <div>
-                  <label style={{ fontSize: '0.675rem', color: '#191716', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>Sex (1=Male, 0=Female)</label>
-                  <select value={features.sex} onChange={(e) => handleFeatureChange('sex', parseInt(e.target.value))} style={{ borderRadius: '0px', borderColor: '#D8D2CC' }}>
-                    <option value={1}>1 - Male</option>
-                    <option value={0}>0 - Female</option>
+                  <label style={{ fontSize: '0.675rem', color: '#191716', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>Primary Diagnosis (ICD-9 group)</label>
+                  <select value={primaryDiagnosis} onChange={(e) => setPrimaryDiagnosis(e.target.value)} style={{ borderRadius: '0px', borderColor: '#D8D2CC' }}>
+                    {DIAGNOSIS_GROUPS.map((g) => <option key={g.key} value={g.key}>{g.label}</option>)}
+                    <option value="other">Other</option>
                   </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.675rem', color: '#191716', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>Chest Pain Type (cp)</label>
-                  <select value={features.cp} onChange={(e) => handleFeatureChange('cp', parseInt(e.target.value))} style={{ borderRadius: '0px', borderColor: '#D8D2CC' }}>
-                    <option value={0}>0 - Typical Angina</option>
-                    <option value={1}>1 - Atypical Angina</option>
-                    <option value={2}>2 - Non-anginal Pain</option>
-                    <option value={3}>3 - Asymptomatic</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.675rem', color: '#191716', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>Resting BP (mm Hg)</label>
-                  <input type="number" value={features.trestbps} onChange={(e) => handleFeatureChange('trestbps', parseFloat(e.target.value))} style={{ borderRadius: '0px', borderColor: '#D8D2CC' }} />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.675rem', color: '#191716', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>Serum Cholesterol (mg/dL)</label>
-                  <input type="number" value={features.chol} onChange={(e) => handleFeatureChange('chol', parseFloat(e.target.value))} style={{ borderRadius: '0px', borderColor: '#D8D2CC' }} />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.675rem', color: '#191716', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>Fasting Blood Sugar &gt;120</label>
-                  <select value={features.fbs} onChange={(e) => handleFeatureChange('fbs', parseInt(e.target.value))} style={{ borderRadius: '0px', borderColor: '#D8D2CC' }}>
-                    <option value={1}>1 - True (&gt;120 mg/dL)</option>
-                    <option value={0}>0 - False (&le;120 mg/dL)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.675rem', color: '#191716', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>Max Heart Rate (thalach)</label>
-                  <input type="number" value={features.thalach} onChange={(e) => handleFeatureChange('thalach', parseFloat(e.target.value))} style={{ borderRadius: '0px', borderColor: '#D8D2CC' }} />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.675rem', color: '#191716', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>Exercise Angina (exang)</label>
-                  <select value={features.exang} onChange={(e) => handleFeatureChange('exang', parseInt(e.target.value))} style={{ borderRadius: '0px', borderColor: '#D8D2CC' }}>
-                    <option value={1}>1 - Yes</option>
-                    <option value={0}>0 - No</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.675rem', color: '#191716', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>ST Depression (oldpeak)</label>
-                  <input type="number" step="0.1" value={features.oldpeak} onChange={(e) => handleFeatureChange('oldpeak', parseFloat(e.target.value))} style={{ borderRadius: '0px', borderColor: '#D8D2CC' }} />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.675rem', color: '#191716', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>Major Vessels (ca: 0-3)</label>
-                  <input type="number" value={features.ca} onChange={(e) => handleFeatureChange('ca', parseInt(e.target.value))} style={{ borderRadius: '0px', borderColor: '#D8D2CC' }} />
                 </div>
               </div>
 

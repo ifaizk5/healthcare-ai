@@ -53,11 +53,5 @@ def search_clinical_notes(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    try:
-        with open("sample_data/clinical_notes.json", "r") as f:
-            notes = json.load(f)
-    except Exception:
-        notes = []
-
-    results = ClinicalNLPService.semantic_search(req.query, notes)
+    results = ClinicalNLPService.semantic_search(req.query)
     return {"query": req.query, "results": results}
