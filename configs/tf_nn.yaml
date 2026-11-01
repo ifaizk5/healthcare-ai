@@ -6,8 +6,9 @@ model:
   activation: "relu"
   optimizer: "adam"
   learning_rate: 0.001
-  batch_size: 16
-  epochs: 50
+  batch_size: 256
+  epochs: 15
+  class_weight: "balanced"
   random_state: 42
 
 training:

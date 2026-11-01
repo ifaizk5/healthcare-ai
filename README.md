@@ -57,6 +57,25 @@ Hyperparameters are driven by YAML configurations in `configs/`.
 
 ---
 
+## 📊 Datasets
+
+Both datasets are public, de-identified and free. Data files are gitignored, so build them once with:
+
+```bash
+py scripts/prepare_datasets.py      # downloads to data/raw/, writes sample_data/
+```
+
+| Dataset | Used for | Prepared file | Size |
+|---|---|---|---|
+| [Diabetes 130-US Hospitals (1999–2008)](https://archive.ics.uci.edu/dataset/296) — UCI #296, CC BY 4.0 | Primary target: **30-day readmission** (`readmitted_30d`) | `sample_data/diabetes_readmission.csv` | 69,970 patients × 29 features, 9.0% positive |
+| [MTSamples medical transcriptions](https://www.kaggle.com/datasets/tboyle10/medicaltranscriptions) — CC0 | NLP: specialty classifier (TF-IDF + LR, 16 specialties) and semantic search | `sample_data/mtsamples_notes.csv` | 4,966 notes |
+
+Readmission preprocessing: one encounter per patient (avoids patient leakage across splits), excludes deaths/hospice discharges, buckets age to midpoints, encodes labs/meds numerically, and groups the primary ICD-9 diagnosis (Strack et al., 2014). Models use `class_weight: balanced` because of the 9% positive rate.
+
+Baseline test-set results (threshold 0.5): ROC-AUC ≈ 0.62 for LR/RF/XGBoost/PyTorch, recall 0.52–0.62. The MTSamples specialty classifier reaches 56% accuracy and 0.57 macro-F1 across 16 classes.
+
+---
+
 ## 💻 Quick Start & Running Locally
 
 ### Option 1: Development Servers (Python & Node)
@@ -68,7 +87,10 @@ cd backend
 # Install dependencies
 pip install -r requirements.txt
 
-# Start FastAPI server (Runs database startup seeder with sample heart disease dataset & initial trained models)
+# Build the datasets (once, from the project root)
+py ../scripts/prepare_datasets.py
+
+# Start FastAPI server (seeds the readmission dataset & trains baseline models on first start)
 uvicorn app.main:app --reload --port 8000
 ```
 Open API docs at: [http://localhost:8000/docs](http://localhost:8000/docs)

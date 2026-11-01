@@ -54,6 +54,12 @@ class ModelTrainerEngine:
         with open(config_path, "r") as f:
             return yaml.safe_load(f)
 
+    @staticmethod
+    def _positive_class_weight(y: np.ndarray) -> float:
+        """negatives / positives, used to rebalance rare positive outcomes (e.g. 9% readmission)."""
+        positives = float(np.sum(y == 1))
+        return float(np.sum(y == 0)) / positives if positives > 0 else 1.0
+
     @classmethod
     def train_model(
         cls, 
@@ -73,6 +79,7 @@ class ModelTrainerEngine:
                 penalty=params.get("penalty", "l2"),
                 solver=params.get("solver", "lbfgs"),
                 max_iter=params.get("max_iter", 1000),
+                class_weight=params.get("class_weight"),
                 random_state=params.get("random_state", 42)
             )
             model.fit(X_train, y_train)
@@ -83,6 +90,9 @@ class ModelTrainerEngine:
                 n_estimators=params.get("n_estimators", 100),
                 max_depth=params.get("max_depth", 10),
                 min_samples_split=params.get("min_samples_split", 2),
+                min_samples_leaf=params.get("min_samples_leaf", 1),
+                class_weight=params.get("class_weight"),
+                n_jobs=-1,
                 random_state=params.get("random_state", 42)
             )
             model.fit(X_train, y_train)
@@ -94,6 +104,8 @@ class ModelTrainerEngine:
                 max_depth=params.get("max_depth", 6),
                 learning_rate=params.get("learning_rate", 0.05),
                 subsample=params.get("subsample", 0.8),
+                colsample_bytree=params.get("colsample_bytree", 1.0),
+                scale_pos_weight=cls._positive_class_weight(y_train) if params.get("class_weight") == "balanced" else 1.0,
                 random_state=params.get("random_state", 42),
                 eval_metric="logloss"
             )
@@ -109,7 +121,8 @@ class ModelTrainerEngine:
             epochs = params.get("epochs", 30)
 
             pytorch_net = PyTorchMLP(input_dim=input_dim, hidden_layers=hidden_layers, dropout_rate=dropout_rate)
-            criterion = nn.BCELoss()
+            pos_weight = cls._positive_class_weight(y_train) if params.get("class_weight") == "balanced" else 1.0
+            torch.manual_seed(params.get("random_state", 42))
             optimizer = optim.Adam(pytorch_net.parameters(), lr=lr)
 
             X_tensor = torch.tensor(X_train, dtype=torch.float32)
@@ -122,7 +135,9 @@ class ModelTrainerEngine:
                 for batch_x, batch_y in dataloader:
                     optimizer.zero_grad()
                     outputs = pytorch_net(batch_x)
-                    loss = criterion(outputs, batch_y)
+                    # Up-weight the minority (positive) class for imbalanced targets
+                    weights = 1.0 + (pos_weight - 1.0) * batch_y
+                    loss = nn.functional.binary_cross_entropy(outputs, batch_y, weight=weights)
                     loss.backward()
                     optimizer.step()
 
@@ -161,6 +176,7 @@ class ModelTrainerEngine:
                 validation_data=(X_val, y_val),
                 batch_size=batch_size,
                 epochs=epochs,
+                class_weight={0: 1.0, 1: cls._positive_class_weight(y_train)} if params.get("class_weight") == "balanced" else None,
                 verbose=0
             )
             model = tf_model

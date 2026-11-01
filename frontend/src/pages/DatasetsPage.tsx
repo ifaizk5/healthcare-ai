@@ -118,7 +118,7 @@ export const DatasetsPage: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Heart Disease Risk Dataset"
+                  placeholder="e.g. Diabetes 130-US Hospitals Readmission"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   style={{ borderRadius: '0px', borderColor: '#D8D2CC' }}
